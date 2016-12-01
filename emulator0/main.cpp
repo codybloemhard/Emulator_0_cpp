@@ -34,6 +34,8 @@ errors:
 [ERROR004]: MOV can not move memory to memory.
 [ERROR005]: ADD can not add to a literal.
 [ERROR006]: ADD can not add from memory to memory.
+[ERROR007]: SUB can not subtract from a literal.
+[ERROR008]: SUB can not suntract memory from memory.
 */
 
 char* getSource();
@@ -54,10 +56,10 @@ char opcodes[256];
 signed short arg0[256];
 signed short arg1[256];
 //rest of the architecture
-char registers[6];
-char stack[250];
-char heap[256];
-char flags;
+unsigned char registers[6];
+unsigned char stack[250];
+unsigned char heap[256];
+unsigned char flags;
 short IP;
 bool breakFlag = false;
 
@@ -185,26 +187,49 @@ bool ADD(signed short a, signed short b) {
 }
 bool SUB(signed short a, signed short b) {
 	if (a < 0) {
-		cout << "[ERROR005]: ADD can not add to a literal." << endl;
+		cout << "[ERROR007]: SUB can not subtract from a literal." << endl;
 		return false;
 	}
-	else if (a < 6) {//add to reg
-		if (b < 6) {//from reg
-			registers[a] += registers[b];
+	else if (a < 6) {//sub to reg
+		if (b < 0) {
+			short ans = registers[a] - ((-b) - 1);
+			if (ans < 0)
+				setFlag(true, 1);
+			registers[a] -= (-b) - 1;
+			return true;
+		}
+		else if (b < 6) {//from reg
+			short ans = registers[a] - registers[b];
+			if (ans < 0)
+				setFlag(true, 1);
+			registers[a] -= registers[b];
 			return true;
 		}
 		else {//from mem
-			registers[a] += stack[b - 6];
+			short ans = registers[a] - stack[b - 6];
+			if (ans < 0)
+				setFlag(true, 1);
+			registers[a] -= stack[b - 6];
 			return true;
 		}
 	}
 	else {//add to mem
-		if (b < 6) {//from reg
-			stack[a - 6] = registers[b];
+		if (b < 0) {
+			short ans = stack[a - 6] - (-b) - 1;
+			if (ans < 0)
+				setFlag(true, 1);
+			stack[a - 6] -= (-b) - 1;
+			return true;
+		}
+		else if (b < 6) {//from reg
+			short ans = stack[a - 6] - registers[b];
+			if (ans < 0)
+				setFlag(true, 1);
+			stack[a - 6] -= registers[b];
 			return true;
 		}
 		else {//from mem
-			cout << "[ERROR006]: ADD can not add from memory to memory." << endl;
+			cout << "[ERROR008]: SUB can not suntract memory from memory." << endl;
 			return false;
 		}
 	}
@@ -255,6 +280,10 @@ void executeInstructions() {
 			f = ADD(arg0[IP], arg1[IP]);
 			break;
 		}
+		case 5: {
+			f = SUB(arg0[IP], arg1[IP]);
+			break;
+		}
 		}
 		printFlags();
 		if (!f) {
@@ -289,6 +318,8 @@ void sourceToOpcodes(char* s, short len) {
 			opcodes[opI] = 3;
 		else if (!strcmp(command, "add"))
 			opcodes[opI] = 4;
+		else if (!strcmp(command, "sub"))
+			opcodes[opI] = 5;
 		i += 3;//3 chars, example: "mov"
 		opI++;
 
@@ -359,9 +390,11 @@ char* getSource() {
 	return
 		"mov,a,#000;"
 		"prt,a;"
-		"add,a,#127;"
+		"add,a,#155;"
 		"prt,a;"
-		"add,a,#200;"
+		"sub,a,#055;"
+		"prt,a;"
+		"sub,a,#120;"
 		"prt,a;"
 		"ret,#000;"
 		;
