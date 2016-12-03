@@ -17,6 +17,14 @@ operators:
 003,ret,id[lit]
 004,add,dst[reg,mem],src[reg,mem]
 005,sub,dst[reg,mem],src[reg,mem]
+006,mul,src[reg,mem]
+007,div,src[reg,mem]
+008,gto,dst[reg,mem]
+009,cmp,src[reg,mem]
+010,jjz
+011,jnz
+012,jjs
+013,jjg
 
 operator arguments (o):
 o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
