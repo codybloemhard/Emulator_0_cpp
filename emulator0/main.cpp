@@ -45,6 +45,10 @@ errors:
 [ERROR007]: SUB can not subtract from a literal.
 [ERROR008]: SUB can not suntract memory from memory.
 [ERROR009]: GTO is used with an invalid adress.
+[ERROR010]: Invalid second argument for CMP.
+[ERROR011]: CMP can not take memory as first argument.
+[ERROR012]: Invalid first argument for CMP.
+[ERROR013]: CMP can not take a literal as first argument.
 */
 
 char* getSource();
@@ -54,7 +58,8 @@ void executeInstructions();
 void printOpcodes(int, int, int, int, int, int);
 void setFlag(bool, char);
 void printFlags();
-//
+void clearFlags();
+////
 bool MOV(signed short, signed short);
 bool PRT(signed short);
 bool NOP();
@@ -62,6 +67,7 @@ bool RET(signed short);
 bool ADD(signed short, signed short);
 bool SUB(signed short, signed short);
 bool GTO(signed short);
+bool CMP(signed short, signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -85,6 +91,7 @@ int main() {
 }
 
 bool MOV(signed short a, signed short b) {
+	clearFlags();
 	if (a < 0) {
 		cout << "[ERROR001]: Can not move to a literal." << endl;
 		return false;
@@ -131,6 +138,7 @@ bool MOV(signed short a, signed short b) {
 	}
 }
 bool PRT(signed short a) {
+	clearFlags();
 	if (a < 6) {//print reg
 		cout << (short)registers[a] << endl;
 	}
@@ -148,6 +156,7 @@ bool RET(signed short a) {
 	return true;
 }
 bool ADD(signed short a, signed short b) {
+	clearFlags();
 	if (a < 0) {
 		cout << "[ERROR005]: ADD can not add to a literal." << endl;
 		return false;
@@ -197,6 +206,7 @@ bool ADD(signed short a, signed short b) {
 	}
 }
 bool SUB(signed short a, signed short b) {
+	clearFlags();
 	if (a < 0) {
 		cout << "[ERROR007]: SUB can not subtract from a literal." << endl;
 		return false;
@@ -254,6 +264,38 @@ bool GTO(signed short a) {
 	}
 	return true;
 }
+//NOT VALIDATED!!!
+bool CMP(signed short a, signed short b) {
+	clearFlags();
+	signed short ans = 0;
+	if (a < 0) {
+		cout << "[ERROR013]: CMP can not take a literal as first argument." << endl;
+		return false;
+	}
+	else if (a < 6) {//cmp reg to
+		if (b < 0) {//literal
+			ans = registers[a] - ((-b) - 1);
+		}
+		else if (b < 6) {//reg
+			ans = registers[a] = registers[b];
+		}
+		else if (b) {//mem
+			ans = registers[a] - (b - 6);
+		}
+		else {
+			cout << "[ERROR010]: Invalid second argument for CMP." << endl;
+			return false;
+		}
+	}
+	else if (a < 256) {//cmp mem to
+		cout << "[ERROR011]: CMP can not take memory as first argument." << endl;
+	}
+	else {
+		cout << "[ERROR012]: Invalid first argument for CMP." << endl;
+		return false;
+	}
+	return true;
+}
 
 void setFlag(bool val, char pos) {
 	if (val) {//set flag to 1
@@ -271,12 +313,17 @@ void printFlags() {
 	}
 	cout << endl;
 }
+void clearFlags() {
+	flags ^= flags;
+}
 
 void executeInstructions() {
+	int i = 0;
 	for (IP = 0; IP < 256; IP++) {
-		for (int i = 0; i < 8; i++)
-		{
-			setFlag(false, i);
+		i++;
+		if (i > 100000) {
+			cout << "[SYSTEM]: Exited because the program took more than 100000 steps." << endl;
+			break;
 		}
 		bool f = true;
 		switch (opcodes[IP]) {
@@ -306,6 +353,10 @@ void executeInstructions() {
 		}
 		case 6: {
 			f = GTO(arg0[IP]);
+			break;
+		}
+		case 7: {
+			f = CMP(arg0[IP], arg1[IP]);
 			break;
 		}
 		}
@@ -347,6 +398,9 @@ void sourceToOpcodes(char* s, short len) {
 			opcodes[opI] = 5;
 		else if (!strcmp(command, "gto"))
 			opcodes[opI] = 6;
+		else if (!strcmp(command, "cmp"))
+			opcodes[opI] = 7;
+		
 		i += 3;//3 chars, example: "mov"
 		opI++;
 
@@ -418,7 +472,7 @@ char* getSource() {
 		"mov,a,#128;"
 		"mov,*000,a;"
 		"prt,*000;"
-		"gto,#006;"
+		"gto,#003;"
 		"mov,a,#129;"
 		"prt,a;"
 		"mov,a,#130;"
