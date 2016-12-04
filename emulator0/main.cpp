@@ -17,14 +17,14 @@ operators:
 003,ret,id[lit]
 004,add,dst[reg,mem],src[reg,mem]
 005,sub,dst[reg,mem],src[reg,mem]
-006,mul,src[reg,mem]
-007,div,src[reg,mem]
-008,gto,dst[reg,mem]
-009,cmp,src[reg,mem]
-010,jjz
-011,jnz
-012,jjs
-013,jjg
+006,gto,dst[reg,mem]
+007,cmp,src[reg,mem]
+008,jjz
+009,jnz
+010,jjs
+011,jjg
+012,mul,src[reg,mem]
+013,div,src[reg,mem]
 
 operator arguments (o):
 o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
@@ -33,7 +33,7 @@ mem->mem is not possible;
 stack is ram, you can use it.
 heap is can not be modified at runtime;
 
-flags: 0:zero,1:overflow,2:sign,3:carry
+flags: 0:zero,1:overflow,2:sign
 
 errors:
 [ERROR001]: Can not move to a literal.
@@ -44,6 +44,7 @@ errors:
 [ERROR006]: ADD can not add from memory to memory.
 [ERROR007]: SUB can not subtract from a literal.
 [ERROR008]: SUB can not suntract memory from memory.
+[ERROR009]: GTO is used with an invalid adress.
 */
 
 char* getSource();
@@ -59,6 +60,8 @@ bool PRT(signed short);
 bool NOP();
 bool RET(signed short);
 bool ADD(signed short, signed short);
+bool SUB(signed short, signed short);
+bool GTO(signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -242,6 +245,15 @@ bool SUB(signed short a, signed short b) {
 		}
 	}
 }
+bool GTO(signed short a) {
+	if (a < 0 && a > -256)
+		IP = (-a) - 1 - 1;// ((-a) - 1) gets the line to jump to, -1 cause the exec-forloop does ip++ after this call so this corrects this.
+	else {
+		cout << "[ERROR009]: GTO is used with an invalid adress." << endl;
+		return false;
+	}
+	return true;
+}
 
 void setFlag(bool val, char pos) {
 	if (val) {//set flag to 1
@@ -292,11 +304,16 @@ void executeInstructions() {
 			f = SUB(arg0[IP], arg1[IP]);
 			break;
 		}
+		case 6: {
+			f = GTO(arg0[IP]);
+			break;
 		}
-		printFlags();
+		}
+		//printFlags();
 		if (!f) {
 			cout << "[@line]: " << IP << endl;
 			cout << "[SYSTEM]: program terminated." << endl;
+			breakFlag = true;
 		}
 		if (breakFlag) {
 			break;
@@ -328,6 +345,8 @@ void sourceToOpcodes(char* s, short len) {
 			opcodes[opI] = 4;
 		else if (!strcmp(command, "sub"))
 			opcodes[opI] = 5;
+		else if (!strcmp(command, "gto"))
+			opcodes[opI] = 6;
 		i += 3;//3 chars, example: "mov"
 		opI++;
 
@@ -396,13 +415,13 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"mov,a,#000;"
+		"mov,a,#128;"
+		"mov,*000,a;"
+		"prt,*000;"
+		"gto,#006;"
+		"mov,a,#129;"
 		"prt,a;"
-		"add,a,#155;"
-		"prt,a;"
-		"sub,a,#055;"
-		"prt,a;"
-		"sub,a,#120;"
+		"mov,a,#130;"
 		"prt,a;"
 		"ret,#000;"
 		;
