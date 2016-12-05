@@ -19,12 +19,14 @@ operators:
 005,sub,dst[reg,mem],src[reg,mem]
 006,gto,dst[reg,mem]
 007,cmp,src[reg,mem]
-008,jjz
-009,jnz
-010,jjs
-011,jjg
-012,mul,src[reg,mem]
-013,div,src[reg,mem]
+008,jjz,dst[IP]
+009,jnz,dst[IP]
+010,jjs,dst[IP]
+011,jjg,dst[IP]
+012,jzs,dst[IP]
+013,jzg,dst[IP]
+014,mul,src[reg,mem]
+015,div,src[reg,mem]
 
 operator arguments (o):
 o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
@@ -49,6 +51,7 @@ errors:
 [ERROR011]: CMP can not take memory as first argument.
 [ERROR012]: Invalid first argument for CMP.
 [ERROR013]: CMP can not take a literal as first argument.
+[ERROR014]: JJZ failed to jump.
 */
 
 char* getSource();
@@ -57,6 +60,7 @@ void sourceToOpcodes(char*, short);
 void executeInstructions();
 void printOpcodes(int, int, int, int, int, int);
 void setFlag(bool, char);
+bool getFlag(char);
 void printFlags();
 void clearFlags();
 ////
@@ -68,6 +72,7 @@ bool ADD(signed short, signed short);
 bool SUB(signed short, signed short);
 bool GTO(signed short);
 bool CMP(signed short, signed short);
+bool JJZ(signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -139,7 +144,10 @@ bool MOV(signed short a, signed short b) {
 }
 bool PRT(signed short a) {
 	clearFlags();
-	if (a < 6) {//print reg
+	if (a < 0) {
+		cout << (short)(-a) - 1 << endl;
+	}
+	else if (a < 6) {//print reg
 		cout << (short)registers[a] << endl;
 	}
 	else {//print mem
@@ -264,7 +272,6 @@ bool GTO(signed short a) {
 	}
 	return true;
 }
-//NOT VALIDATED!!!
 bool CMP(signed short a, signed short b) {
 	clearFlags();
 	signed short ans = 0;
@@ -289,10 +296,26 @@ bool CMP(signed short a, signed short b) {
 	}
 	else if (a < 256) {//cmp mem to
 		cout << "[ERROR011]: CMP can not take memory as first argument." << endl;
+		return false;
 	}
 	else {
 		cout << "[ERROR012]: Invalid first argument for CMP." << endl;
 		return false;
+	}
+	if (ans == 0)
+		setFlag(true, 0);
+	else if (ans < 0)
+		setFlag(true, 2);
+	else
+		setFlag(false, 2);
+
+	return true;
+}
+bool JJZ(signed short a) {
+	if (getFlag(0)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR014]: JJZ failed to jump." << endl;
 	}
 	return true;
 }
@@ -304,6 +327,12 @@ void setFlag(bool val, char pos) {
 	else {//clear flag to 0
 		flags &= ~(1 << pos);
 	}
+}
+bool getFlag(char pos) {
+	int bit = (flags >> pos) & 1;
+	if (bit == 1)
+		return true;
+	return false;
 }
 void printFlags() {
 	cout << "[SYSTEM][FLAGS]:";
@@ -359,8 +388,12 @@ void executeInstructions() {
 			f = CMP(arg0[IP], arg1[IP]);
 			break;
 		}
+		case 8: {
+			f = JJZ(arg0[IP]);
+			break;
 		}
-		//printFlags();
+		}
+		printFlags();
 		if (!f) {
 			cout << "[@line]: " << IP << endl;
 			cout << "[SYSTEM]: program terminated." << endl;
@@ -400,6 +433,8 @@ void sourceToOpcodes(char* s, short len) {
 			opcodes[opI] = 6;
 		else if (!strcmp(command, "cmp"))
 			opcodes[opI] = 7;
+		else if (!strcmp(command, "jjz"))
+			opcodes[opI] = 8;
 		
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -469,14 +504,13 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"mov,a,#128;"
-		"mov,*000,a;"
-		"prt,*000;"
-		"gto,#003;"
-		"mov,a,#129;"
-		"prt,a;"
-		"mov,a,#130;"
-		"prt,a;"
+		"mov,a,#100;"
+		"cmp,a,#100;"
+		"jjz,#005;"
+		"prt,#000;"
+		"prt,#001;"
+		"prt,#002;"
+		"prt,#003;"
 		"ret,#000;"
 		;
 }
