@@ -5,53 +5,6 @@ using namespace std;
 /*
 emulator for custom 8bit pc.
 simple assembly language
-
-registers:
-a,b,c,d,e,f all 8 bit
-memory: 8bit pointer, 8bit val
-operators:
-
-000,mov,dst[reg,mem],scr[reg,mem,lit]
-001,prt,src[reg,mem]
-002,nop
-003,ret,id[lit]
-004,add,dst[reg,mem],src[reg,mem]
-005,sub,dst[reg,mem],src[reg,mem]
-006,gto,dst[reg,mem]
-007,cmp,src[reg,mem]
-008,jjz,dst[IP]
-009,jnz,dst[IP]
-010,jjs,dst[IP]
-011,jjg,dst[IP]
-012,jzs,dst[IP]
-013,jzg,dst[IP]
-014,mul,src[reg,mem]
-015,div,src[reg,mem]
-
-operator arguments (o):
-o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
-mem->mem is not possible;
-
-stack is ram, you can use it.
-heap is can not be modified at runtime;
-
-flags: 0:zero,1:overflow,2:sign
-
-errors:
-[ERROR001]: Can not move to a literal.
-[ERROR002]: Invalid second argument for MOV.
-[ERROR003]: Invalid first argument for MOV.
-[ERROR004]: MOV can not move memory to memory.
-[ERROR005]: ADD can not add to a literal.
-[ERROR006]: ADD can not add from memory to memory.
-[ERROR007]: SUB can not subtract from a literal.
-[ERROR008]: SUB can not suntract memory from memory.
-[ERROR009]: GTO is used with an invalid adress.
-[ERROR010]: Invalid second argument for CMP.
-[ERROR011]: CMP can not take memory as first argument.
-[ERROR012]: Invalid first argument for CMP.
-[ERROR013]: CMP can not take a literal as first argument.
-[ERROR014]: JJZ failed to jump.
 */
 
 char* getSource();
@@ -73,6 +26,11 @@ bool SUB(signed short, signed short);
 bool GTO(signed short);
 bool CMP(signed short, signed short);
 bool JJZ(signed short);
+bool JNZ(signed short);
+bool JJS(signed short);
+bool JJG(signed short);
+bool JZS(signed short);
+bool JZG(signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -319,6 +277,46 @@ bool JJZ(signed short a) {
 	}
 	return true;
 }
+bool JNZ(signed short a) {
+	if (!getFlag(0)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR015]: JNZ failed to jump." << endl;
+	}
+	return true;
+}
+bool JJS(signed short a) {
+	if (getFlag(2) && !getFlag(0)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR016]: JJS failed to jump." << endl;
+	}
+	return true;
+}
+bool JJG(signed short a) {
+	if (!getFlag(2) && !getFlag(0)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR017]: JJG failed to jump." << endl;
+	}
+	return true;
+}
+bool JZS(signed short a) {
+	if (getFlag(0) || getFlag(2)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR018]: JZS failed to jump." << endl;
+	}
+	return true;
+}
+bool JZG(signed short a) {
+	if (getFlag(0) || !getFlag(2)) {
+		bool jumped = GTO(a);
+		if (!jumped)
+			cout << "[ERROR019]: JZG failed to jump." << endl;
+	}
+	return true;
+}
 
 void setFlag(bool val, char pos) {
 	if (val) {//set flag to 1
@@ -356,42 +354,20 @@ void executeInstructions() {
 		}
 		bool f = true;
 		switch (opcodes[IP]) {
-		case 0: {
-			f = MOV(arg0[IP], arg1[IP]);
-			break;
-		}
-		case 1: {
-			f = PRT(arg0[IP]);
-			break;
-		}
-		case 2: {
-			f = NOP();
-			break;
-		}
-		case 3: {
-			f = RET(arg0[IP]);
-			break;
-		}
-		case 4: {
-			f = ADD(arg0[IP], arg1[IP]);
-			break;
-		}
-		case 5: {
-			f = SUB(arg0[IP], arg1[IP]);
-			break;
-		}
-		case 6: {
-			f = GTO(arg0[IP]);
-			break;
-		}
-		case 7: {
-			f = CMP(arg0[IP], arg1[IP]);
-			break;
-		}
-		case 8: {
-			f = JJZ(arg0[IP]);
-			break;
-		}
+		case   0: { f = MOV(arg0[IP], arg1[IP]);	break; }
+		case   1: { f = PRT(arg0[IP]);				break; }
+		case   2: { f = NOP();						break; }
+		case   3: { f = RET(arg0[IP]);				break; }
+		case   4: { f = ADD(arg0[IP], arg1[IP]);    break; }
+		case   5: { f = SUB(arg0[IP], arg1[IP]);	break; }
+		case   6: { f = GTO(arg0[IP]);				break; }
+		case   7: { f = CMP(arg0[IP], arg1[IP]);    break; }
+		case   8: { f = JJZ(arg0[IP]);				break; }
+		case   9: { f = JNZ(arg0[IP]);              break; }
+		case  10: { f = JJS(arg0[IP]);              break; }
+		case  11: { f = JJG(arg0[IP]);              break; }
+		case  12: { f = JZS(arg0[IP]);              break; }
+		case  13: { f = JZG(arg0[IP]);              break; }
 		}
 		printFlags();
 		if (!f) {
@@ -417,25 +393,21 @@ void sourceToOpcodes(char* s, short len) {
 		command[2] = s[i + 2];
 		command[3] = '\0';
 
-		if (!strcmp(command, "mov"))
-			opcodes[opI] = 0;
-		else if (!strcmp(command, "prt"))
-			opcodes[opI] = 1;
-		else if (!strcmp(command, "nop"))
-			opcodes[opI] = 2;
-		else if (!strcmp(command, "ret"))
-			opcodes[opI] = 3;
-		else if (!strcmp(command, "add"))
-			opcodes[opI] = 4;
-		else if (!strcmp(command, "sub"))
-			opcodes[opI] = 5;
-		else if (!strcmp(command, "gto"))
-			opcodes[opI] = 6;
-		else if (!strcmp(command, "cmp"))
-			opcodes[opI] = 7;
-		else if (!strcmp(command, "jjz"))
-			opcodes[opI] = 8;
-		
+		if (!strcmp(command, "mov"))		opcodes[opI] = 0;
+		else if (!strcmp(command, "prt"))	opcodes[opI] = 1;
+		else if (!strcmp(command, "nop"))	opcodes[opI] = 2;
+		else if (!strcmp(command, "ret"))	opcodes[opI] = 3;
+		else if (!strcmp(command, "add"))	opcodes[opI] = 4;
+		else if (!strcmp(command, "sub"))	opcodes[opI] = 5;
+		else if (!strcmp(command, "gto"))	opcodes[opI] = 6;
+		else if (!strcmp(command, "cmp"))	opcodes[opI] = 7;
+		else if (!strcmp(command, "jjz"))	opcodes[opI] = 8;
+		else if (!strcmp(command, "jnz"))	opcodes[opI] = 9;
+		else if (!strcmp(command, "jjs"))	opcodes[opI] = 10;
+		else if (!strcmp(command, "jjg"))	opcodes[opI] = 11;
+		else if (!strcmp(command, "jzs"))	opcodes[opI] = 12;
+		else if (!strcmp(command, "jzg"))	opcodes[opI] = 13;
+
 		i += 3;//3 chars, example: "mov"
 		opI++;
 
@@ -505,8 +477,8 @@ short getPara(char* s, int& i) {
 char* getSource() {
 	return
 		"mov,a,#100;"
-		"cmp,a,#100;"
-		"jjz,#005;"
+		"cmp,a,#101;"
+		"jzg,#005;"
 		"prt,#000;"
 		"prt,#001;"
 		"prt,#002;"

@@ -1,0 +1,51 @@
+registers:
+a,b,c,d,e,f all 8 bit
+memory: 8bit pointer, 8bit val
+operators:
+
+000,mov,dst[reg,mem],scr[reg,mem,lit]
+001,prt,src[reg,mem]
+002,nop
+003,ret,id[lit]
+004,add,dst[reg,mem],src[reg,mem]
+005,sub,dst[reg,mem],src[reg,mem]
+006,gto,dst[reg,mem]
+007,cmp,src[reg,mem]
+008,jjz,dst[IP]
+009,jnz,dst[IP]
+010,jjs,dst[IP]
+011,jjg,dst[IP]
+012,jzs,dst[IP]
+013,jzg,dst[IP]
+014,mul,src[reg,mem]
+015,div,src[reg,mem]
+
+operator arguments (o):
+o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
+mem->mem is not possible;
+
+stack is ram, you can use it.
+heap can not be modified at runtime;
+
+flags: 0:zero,1:overflow,2:sign;
+
+errors:
+[ERROR001]: Can not move to a literal.
+[ERROR002]: Invalid second argument for MOV.
+[ERROR003]: Invalid first argument for MOV.
+[ERROR004]: MOV can not move memory to memory.
+[ERROR005]: ADD can not add to a literal.
+[ERROR006]: ADD can not add from memory to memory.
+[ERROR007]: SUB can not subtract from a literal.
+[ERROR008]: SUB can not subtract memory from memory.
+[ERROR009]: GTO is used with an invalid adress.
+[ERROR010]: Invalid second argument for CMP.
+[ERROR011]: CMP can not take memory as first argument.
+[ERROR012]: Invalid first argument for CMP.
+[ERROR013]: CMP can not take a literal as first argument.
+[ERROR014]: JJZ failed to jump.
+[ERROR015]: JNZ failed to jump.
+[ERROR016]: JJS failed to jump.
+[ERROR017]: JJG failed to jump.
+[ERROR018]: JZS failed to jump.
+[ERROR019]: JZG failed to jump.
