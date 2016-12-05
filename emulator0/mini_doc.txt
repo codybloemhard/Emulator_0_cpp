@@ -49,3 +49,27 @@ errors:
 [ERROR017]: JJG failed to jump.
 [ERROR018]: JZS failed to jump.
 [ERROR019]: JZG failed to jump.
+
+//basics
+"mov,a,#003;"
+"mov,b,#004;"
+"add,a,b;"
+"prt,a;"
+"prt,b;"
+"mov,*222,a;"
+"mov,c,#056;"
+"prt,c;"
+"prt,*222;"
+"nop;"
+"mov,d,#022;"
+"mov,*015,d;"
+"prt,*015;"
+"ret,#000;"
+
+//loop
+"mov,a,#010;"
+"prt,a;"
+"sub,a,#001;"
+"cmp,a,#000;"
+"jnz,#001;"
+"ret,#000;"

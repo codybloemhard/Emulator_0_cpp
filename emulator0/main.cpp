@@ -31,6 +31,8 @@ bool JJS(signed short);
 bool JJG(signed short);
 bool JZS(signed short);
 bool JZG(signed short);
+bool MUL(signed short);
+bool DIV(signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -317,6 +319,54 @@ bool JZG(signed short a) {
 	}
 	return true;
 }
+bool MUL(signed short a) {
+	clearFlags();
+	if (a < 0) {
+		short ans = registers[0] * ((-a) - 1);
+		if (ans > 255)
+			setFlag(true, 1);
+		registers[0] *= (-a) - 1;
+		return true;
+	}
+	else if (a < 6) {//from reg
+		short ans = registers[0] * registers[a];
+		if (ans > 255)
+			setFlag(true, 1);
+		registers[0] *= registers[a];
+		return true;
+	}
+	else {//from mem
+		short ans = registers[0] * stack[a - 6];
+		if (ans > 255)
+			setFlag(true, 1);
+		registers[0] *= stack[a - 6];
+		return true;
+	}
+}
+bool DIV(signed short a) {
+	clearFlags();
+	if (a < 0) {
+		short ans = registers[0] / ((-a) - 1);
+		short rem = registers[0] % ((-a) - 1);
+		registers[0] = ans;
+		registers[3] = rem;
+		return true;
+	}
+	else if (a < 6) {//from reg
+		short ans = registers[0] / registers[a];
+		short rem = registers[0] % registers[a];
+		registers[0] = ans;
+		registers[3] = rem;
+		return true;
+	}
+	else {//from mem
+		short ans = registers[0] / stack[a - 6];
+		short rem = registers[0] % stack[a - 6];
+		registers[0] = ans;
+		registers[3] = rem;
+		return true;
+	}
+}
 
 void setFlag(bool val, char pos) {
 	if (val) {//set flag to 1
@@ -368,8 +418,10 @@ void executeInstructions() {
 		case  11: { f = JJG(arg0[IP]);              break; }
 		case  12: { f = JZS(arg0[IP]);              break; }
 		case  13: { f = JZG(arg0[IP]);              break; }
+		case  14: { f = MUL(arg0[IP]);				break; }
+		case  15: { f = DIV(arg0[IP]);				break; }
 		}
-		printFlags();
+		//printFlags();
 		if (!f) {
 			cout << "[@line]: " << IP << endl;
 			cout << "[SYSTEM]: program terminated." << endl;
@@ -407,6 +459,8 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "jjg"))	opcodes[opI] = 11;
 		else if (!strcmp(command, "jzs"))	opcodes[opI] = 12;
 		else if (!strcmp(command, "jzg"))	opcodes[opI] = 13;
+		else if (!strcmp(command, "mul"))	opcodes[opI] = 14;
+		else if (!strcmp(command, "div"))	opcodes[opI] = 15;
 
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -476,30 +530,12 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"mov,a,#100;"
-		"cmp,a,#101;"
-		"jzg,#005;"
-		"prt,#000;"
-		"prt,#001;"
-		"prt,#002;"
-		"prt,#003;"
+		"mov,a,#016;"
+		"prt,a;"
+		"mov,*032,#003;"
+		"div,*032;"
+		"prt,a;"
+		"prt,d;"
 		"ret,#000;"
 		;
 }
-/*
-"mov,a,#003;"
-"mov,b,#004;"
-"add,a,b;"
-"prt,a;"
-"prt,b;"
-"mov,*222,a;"
-"mov,c,#056;"
-"prt,c;"
-"prt,*222;"
-"nop;"
-"mov,d,#022;"
-"mov,*015,d;"
-"prt,*015;"
-"ret,#000;"
-;
-*/
