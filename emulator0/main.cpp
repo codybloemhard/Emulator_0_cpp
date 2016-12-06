@@ -19,7 +19,7 @@ void clearFlags();
 bool MOV(signed short, signed short);
 bool PRT(signed short);
 bool NOP();
-bool RET(signed short);
+bool EXT(signed short);
 bool ADD(signed short, signed short);
 bool SUB(signed short, signed short);
 bool GTO(signed short);
@@ -36,6 +36,7 @@ bool GCH(signed short);
 bool PSH(signed short);
 bool POP(signed short);
 bool CAL(signed short);
+bool RET();
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -124,7 +125,7 @@ bool PRT(signed short a) {
 bool NOP() {
 	return true;//:D
 }
-bool RET(signed short a) {
+bool EXT(signed short a) {
 	breakFlag = true;
 	cout << "[PROGRAM]: The program has stopped with exit-code " << -a - 1 << "." << endl;
 	return true;
@@ -423,8 +424,29 @@ bool POP(signed short a) {
 	}
 	return false;
 }
-bool CAL(signed short) {
-	return false;
+bool CAL(signed short a) {
+	if (a < 0 && a > -256) {
+		if (SP >= 16) {
+			cout << "[ERROR021]: Stackoverflow." << endl;
+			return false;
+		}
+		else {
+			stack[SP++] = IP;
+			IP = (-a) - 1 - 1;
+		}
+		return true;
+	}
+	else {
+		cout << "[ERROR027]: CAL received a nonvalid adress." << endl;
+		return false;
+	}
+}
+bool RET() {
+	if (SP != 0) {
+		IP = stack[SP - 1];//-1 cause loop does IP++; and +1 cause we need go to line after CAL so nothing
+		stack[SP--] = 0;
+	}
+	return true;
 }
 
 void setFlag(bool val, char pos) {
@@ -466,7 +488,7 @@ void executeInstructions() {
 		case   0: { f = MOV(arg0[IP], arg1[IP]);	break; }
 		case   1: { f = PRT(arg0[IP]);				break; }
 		case   2: { f = NOP();						break; }
-		case   3: { f = RET(arg0[IP]);				break; }
+		case   3: { f = EXT(arg0[IP]);				break; }
 		case   4: { f = ADD(arg0[IP], arg1[IP]);    break; }
 		case   5: { f = SUB(arg0[IP], arg1[IP]);	break; }
 		case   6: { f = GTO(arg0[IP]);				break; }
@@ -483,6 +505,7 @@ void executeInstructions() {
 		case  17: { f = PSH(arg0[IP]);				break; }
 		case  18: { f = POP(arg0[IP]);				break; }
 		case  19: { f = CAL(arg0[IP]);				break; }
+		case  20: { f = RET();						break; }
 		}
 		//printFlags();
 		if (!f) {
@@ -511,7 +534,7 @@ void sourceToOpcodes(char* s, short len) {
 		if (!strcmp(command, "mov"))		opcodes[opI] = 0;
 		else if (!strcmp(command, "prt"))	opcodes[opI] = 1;
 		else if (!strcmp(command, "nop"))	opcodes[opI] = 2;
-		else if (!strcmp(command, "ret"))	opcodes[opI] = 3;
+		else if (!strcmp(command, "ext"))	opcodes[opI] = 3;
 		else if (!strcmp(command, "add"))	opcodes[opI] = 4;
 		else if (!strcmp(command, "sub"))	opcodes[opI] = 5;
 		else if (!strcmp(command, "gto"))	opcodes[opI] = 6;
@@ -528,6 +551,7 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "psh"))	opcodes[opI] = 17;
 		else if (!strcmp(command, "pop"))	opcodes[opI] = 18;
 		else if (!strcmp(command, "cal"))	opcodes[opI] = 19;
+		else if (!strcmp(command, "ret"))	opcodes[opI] = 20;
 
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -597,6 +621,20 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"ret,#000;"
+		"prt,#128;"
+		"cal,#007;"
+		"prt,#128;"
+		"cal,#007;"
+		"prt,#128;"
+		"cal,#007;"
+		"ext,#000;"
+		"mov,a,#001;"
+		"mov,c,#010;"
+		"prt,a;"
+		"add,a,#001;"
+		"sub,c,#001;"
+		"cmp,c,#000;"
+		"jnz,#009;"
+		"ret;"
 		;
 }

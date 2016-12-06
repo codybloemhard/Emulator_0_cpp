@@ -6,7 +6,7 @@ operators:
 000,mov,dst[reg,mem],scr[reg,mem,lit]
 001,prt,src[reg,mem]
 002,nop
-003,ret,id[lit]
+003,ext,id[lit]
 004,add,dst[reg,mem],src[reg,mem]
 005,sub,dst[reg,mem],src[reg,mem]
 006,gto,dst[reg,mem]
@@ -56,6 +56,7 @@ errors:
 [ERROR024]: POP cannot pop into a literal.
 [ERROR025]: POP cannot pop into ram.
 [ERROR026]: POP received a nonvalid argument.
+[ERROR027]: CAL received a nonvalid adress.
 
 //basics
 "mov,a,#003;"
