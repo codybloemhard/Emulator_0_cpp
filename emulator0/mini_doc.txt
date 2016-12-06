@@ -17,14 +17,14 @@ operators:
 011,jjg,dst[IP]
 012,jzs,dst[IP]
 013,jzg,dst[IP]
-014,mul,src[reg,mem]
-015,div,src[reg,mem]
+014,mul,src[reg,mem]	//does a = a * src
+015,div,src[reg,mem]	//does a = a / src, d = a % src
 
 operator arguments (o):
 o E [0,5] o is indicating a register, o E [6,255] o is indicating a memory location, o < 0 o is indicating a literal
 mem->mem is not possible;
 
-stack is ram, you can use it.
+ram is readable and writable, you can use it.
 heap can not be modified at runtime;
 
 flags: 0:zero,1:overflow,2:sign;
@@ -49,6 +49,13 @@ errors:
 [ERROR017]: JJG failed to jump.
 [ERROR018]: JZS failed to jump.
 [ERROR019]: JZG failed to jump.
+[ERROR020]: GCH received a faulty memory adress.
+[ERROR021]: Stackoverflow.
+[ERROR022]: PSH cannot push from ram.
+[ERROR023]: PSH received a nonvalid argument.
+[ERROR024]: POP cannot pop into a literal.
+[ERROR025]: POP cannot pop into ram.
+[ERROR026]: POP received a nonvalid argument.
 
 //basics
 "mov,a,#003;"

@@ -6,7 +6,6 @@ using namespace std;
 emulator for custom 8bit pc.
 simple assembly language
 */
-
 char* getSource();
 short getPara(char*, int&);
 void sourceToOpcodes(char*, short);
@@ -33,16 +32,23 @@ bool JZS(signed short);
 bool JZG(signed short);
 bool MUL(signed short);
 bool DIV(signed short);
+bool GCH(signed short);
+bool PSH(signed short);
+bool POP(signed short);
+bool CAL(signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
 signed short arg1[256];
 //rest of the architecture
 unsigned char registers[6];
-unsigned char stack[250];
+unsigned char stack[16];
+unsigned char ram[250];
 unsigned char heap[256];
 unsigned char flags;
-short IP;
+unsigned short IP;
+unsigned short SP;
+
 bool breakFlag = false;
 
 int main() {
@@ -71,7 +77,7 @@ bool MOV(signed short a, signed short b) {
 			return true;
 		}
 		else if (b) {//from mem
-			registers[a] = b - 6;
+			registers[a] = ram[b - 6];
 			return true;
 		}
 		else {
@@ -81,11 +87,11 @@ bool MOV(signed short a, signed short b) {
 	}
 	else if (a < 256) {//mov to mem
 		if (b < 0) {//from literal
-			stack[a - 6] = (-b) - 1;
+			ram[a - 6] = (-b) - 1;
 			return true;
 		}
 		else if (b < 6) {//from reg
-			stack[a - 6] = registers[b];
+			ram[a - 6] = registers[b];
 			return true;
 		}
 		else if (b) {//from mem
@@ -111,7 +117,7 @@ bool PRT(signed short a) {
 		cout << (short)registers[a] << endl;
 	}
 	else {//print mem
-		cout << (short)stack[a - 6] << endl;
+		cout << (short)ram[a - 6] << endl;
 	}
 	return true;
 }
@@ -145,26 +151,26 @@ bool ADD(signed short a, signed short b) {
 			return true;
 		}
 		else {//from mem
-			short ans = registers[a] + stack[b - 6];
+			short ans = registers[a] + ram[b - 6];
 			if (ans > 255)
 				setFlag(true, 1);
-			registers[a] += stack[b - 6];
+			registers[a] += ram[b - 6];
 			return true;
 		}
 	}
 	else {//add to mem
 		if (b < 0) {
-			short ans = stack[a - 6] + (-b) - 1;
+			short ans = ram[a - 6] + (-b) - 1;
 			if (ans > 255)
 				setFlag(true, 1);
-			stack[a - 6] += (-b) - 1;
+			ram[a - 6] += (-b) - 1;
 			return true;
 		}
 		else if (b < 6) {//from reg
-			short ans = stack[a - 6] + registers[b];
+			short ans = ram[a - 6] + registers[b];
 			if(ans > 255)
 				setFlag(true, 1);
-			stack[a - 6] += registers[b];
+			ram[a - 6] += registers[b];
 			return true;
 		}
 		else {//from mem
@@ -195,26 +201,26 @@ bool SUB(signed short a, signed short b) {
 			return true;
 		}
 		else {//from mem
-			short ans = registers[a] - stack[b - 6];
+			short ans = registers[a] - ram[b - 6];
 			if (ans < 0)
 				setFlag(true, 1);
-			registers[a] -= stack[b - 6];
+			registers[a] -= ram[b - 6];
 			return true;
 		}
 	}
 	else {//add to mem
 		if (b < 0) {
-			short ans = stack[a - 6] - (-b) - 1;
+			short ans = ram[a - 6] - (-b) - 1;
 			if (ans < 0)
 				setFlag(true, 1);
-			stack[a - 6] -= (-b) - 1;
+			ram[a - 6] -= (-b) - 1;
 			return true;
 		}
 		else if (b < 6) {//from reg
-			short ans = stack[a - 6] - registers[b];
+			short ans = ram[a - 6] - registers[b];
 			if (ans < 0)
 				setFlag(true, 1);
-			stack[a - 6] -= registers[b];
+			ram[a - 6] -= registers[b];
 			return true;
 		}
 		else {//from mem
@@ -336,10 +342,10 @@ bool MUL(signed short a) {
 		return true;
 	}
 	else {//from mem
-		short ans = registers[0] * stack[a - 6];
+		short ans = registers[0] * ram[a - 6];
 		if (ans > 255)
 			setFlag(true, 1);
-		registers[0] *= stack[a - 6];
+		registers[0] *= ram[a - 6];
 		return true;
 	}
 }
@@ -360,12 +366,65 @@ bool DIV(signed short a) {
 		return true;
 	}
 	else {//from mem
-		short ans = registers[0] / stack[a - 6];
-		short rem = registers[0] % stack[a - 6];
+		short ans = registers[0] / ram[a - 6];
+		short rem = registers[0] % ram[a - 6];
 		registers[0] = ans;
 		registers[3] = rem;
 		return true;
 	}
+}
+bool GCH(signed short a) {
+	if (a < 256) {
+		cin >> ram[a - 6];
+		return true;
+	}
+	else {
+		cout << "[ERROR020]: GIN received a faulty memory adress." << endl;
+		return false;
+	}
+}
+bool PSH(signed short a) {
+	if (SP >= 16) {
+		cout << "[ERROR021]: Stackoverflow." << endl;
+		return false;
+	}
+	else {
+		if (a < 0)
+			stack[SP++] = -a - 1;
+		else if (a < 6)
+			stack[SP++] = registers[a];
+		else if (a < 255)
+			cout << "[ERROR022]: PSH cannot push from ram." << endl;
+		else {
+			cout << "[ERROR023]: PSH received a nonvalid argument." << endl;
+			return false;
+		}
+		return true;
+	}
+}
+bool POP(signed short a) {
+	if (SP >= 0) {
+		if (a < 0) {
+			cout << "[ERROR024]: POP cannot pop into a literal." << endl;
+			return false;
+		}
+		else if (a < 6)
+			registers[a] = stack[SP - 1];
+		else if (a < 255) {
+			cout << "[ERROR025]: POP cannot pop into ram." << endl;
+			return false;
+		}
+		else {
+			cout << "[ERROR026]: POP received a nonvalid argument." << endl;
+			return false;
+		}
+		stack[SP--] = 0;
+		return true;
+	}
+	return false;
+}
+bool CAL(signed short) {
+	return false;
 }
 
 void setFlag(bool val, char pos) {
@@ -420,6 +479,10 @@ void executeInstructions() {
 		case  13: { f = JZG(arg0[IP]);              break; }
 		case  14: { f = MUL(arg0[IP]);				break; }
 		case  15: { f = DIV(arg0[IP]);				break; }
+		case  16: { f = GCH(arg0[IP]);				break; }
+		case  17: { f = PSH(arg0[IP]);				break; }
+		case  18: { f = POP(arg0[IP]);				break; }
+		case  19: { f = CAL(arg0[IP]);				break; }
 		}
 		//printFlags();
 		if (!f) {
@@ -461,6 +524,10 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "jzg"))	opcodes[opI] = 13;
 		else if (!strcmp(command, "mul"))	opcodes[opI] = 14;
 		else if (!strcmp(command, "div"))	opcodes[opI] = 15;
+		else if (!strcmp(command, "gch"))	opcodes[opI] = 16;
+		else if (!strcmp(command, "psh"))	opcodes[opI] = 17;
+		else if (!strcmp(command, "pop"))	opcodes[opI] = 18;
+		else if (!strcmp(command, "cal"))	opcodes[opI] = 19;
 
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -530,12 +597,6 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"mov,a,#016;"
-		"prt,a;"
-		"mov,*032,#003;"
-		"div,*032;"
-		"prt,a;"
-		"prt,d;"
 		"ret,#000;"
 		;
 }
