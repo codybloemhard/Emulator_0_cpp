@@ -37,6 +37,9 @@ bool PSH(signed short);
 bool POP(signed short);
 bool CAL(signed short);
 bool RET();
+bool GIT(signed short);
+bool PUT(signed short);
+bool CPY(signed short, signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -45,7 +48,6 @@ signed short arg1[256];
 unsigned char registers[6];
 unsigned char stack[16];
 unsigned char ram[250];
-unsigned char heap[256];
 unsigned char flags;
 unsigned short IP;
 unsigned short SP;
@@ -375,12 +377,16 @@ bool DIV(signed short a) {
 	}
 }
 bool GCH(signed short a) {
-	if (a < 256) {
+	if (a < 6 && a >= 0) {
+		cin >> ram[registers[a]];
+		return true;
+	}
+	else if (a < 256) {
 		cin >> ram[a - 6];
 		return true;
 	}
 	else {
-		cout << "[ERROR020]: GIN received a faulty memory adress." << endl;
+		cout << "[ERROR020]: GCH received a faulty argument." << endl;
 		return false;
 	}
 }
@@ -448,6 +454,54 @@ bool RET() {
 	}
 	return true;
 }
+bool GIT(signed short a) {
+	string s;
+	int ans = 0;
+	cin >> s;
+	ans = stoi(s);
+	if (a < 6 && a >= 0) {
+		ram[registers[a]] = ans;
+		return true;
+	}
+	else if (a < 256) {
+		ram[a - 6] = ans;
+		return true;
+	}
+	else {
+		cout << "[ERROR028]: GIT received a faulty argument." << endl;
+		return false;
+	}
+}
+bool PUT(signed short a) {
+	if (a < 6 && a >= 0) {
+		cout << (char)ram[registers[a]];
+		return true;
+	}
+	else if (a < 256) {
+		cout << (char)ram[a - 6];
+		return true;
+	}
+	else {
+		cout << "[ERROR029]: PUT received a faulty argument." << endl;
+		return false;
+	}
+}
+bool CPY(signed short a, signed short b) {
+	if (a >= 0 && a < 6 && b >= 0 && b < 6) {
+		if (registers[b] > 255) {
+			cout << "[ERROR031]: CPY has received a faulty second argument." << endl;
+			return false;
+		}
+		else {
+			ram[registers[a]] = registers[b];
+			return true;
+		}
+	}
+	else {
+		cout << "[ERROR030]: CPY can only copy from register b to memory referenced by register a." << endl;
+		return false;
+	}
+}
 
 void setFlag(bool val, char pos) {
 	if (val) {//set flag to 1
@@ -506,6 +560,9 @@ void executeInstructions() {
 		case  18: { f = POP(arg0[IP]);				break; }
 		case  19: { f = CAL(arg0[IP]);				break; }
 		case  20: { f = RET();						break; }
+		case  21: { f = GIT(arg0[IP]);				break; }
+		case  22: { f = PUT(arg0[IP]);				break; }
+		case  23: { f = CPY(arg0[IP], arg1[IP]);	break; }
 		}
 		//printFlags();
 		if (!f) {
@@ -552,6 +609,9 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "pop"))	opcodes[opI] = 18;
 		else if (!strcmp(command, "cal"))	opcodes[opI] = 19;
 		else if (!strcmp(command, "ret"))	opcodes[opI] = 20;
+		else if (!strcmp(command, "git"))	opcodes[opI] = 21;
+		else if (!strcmp(command, "put"))	opcodes[opI] = 22;
+		else if (!strcmp(command, "cpy"))	opcodes[opI] = 23;
 
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -621,20 +681,21 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"prt,#128;"
-		"cal,#007;"
-		"prt,#128;"
-		"cal,#007;"
-		"prt,#128;"
-		"cal,#007;"
-		"ext,#000;"
-		"mov,a,#001;"
-		"mov,c,#010;"
-		"prt,a;"
+		"mov,a,#040;"
+		"mov,b,#032;"
+		"cpy,a,b;"
 		"add,a,#001;"
-		"sub,c,#001;"
-		"cmp,c,#000;"
-		"jnz,#009;"
-		"ret;"
+		"cpy,a,b;"
+		"add,a,#001;"
+		"cpy,a,b;"
+		"add,a,#001;"
+		"cpy,a,b;"
+		"prt,*039;"
+		"prt,*040;"
+		"prt,*041;"
+		"prt,*042;"
+		"prt,*043;"
+		"prt,*044;"
+		"ext,#000;"
 		;
 }

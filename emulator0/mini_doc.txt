@@ -49,7 +49,7 @@ errors:
 [ERROR017]: JJG failed to jump.
 [ERROR018]: JZS failed to jump.
 [ERROR019]: JZG failed to jump.
-[ERROR020]: GCH received a faulty memory adress.
+[ERROR020]: GCH received a faulty argument.
 [ERROR021]: Stackoverflow.
 [ERROR022]: PSH cannot push from ram.
 [ERROR023]: PSH received a nonvalid argument.
@@ -57,6 +57,10 @@ errors:
 [ERROR025]: POP cannot pop into ram.
 [ERROR026]: POP received a nonvalid argument.
 [ERROR027]: CAL received a nonvalid adress.
+[ERROR028]: GIT received a faulty argument.
+[ERROR029]: PUT received a faulty argument.
+[ERROR030]: CPY can only copy from register b to memory referenced by register a.
+[ERROR031]: CPY has received a faulty second argument.
 
 //basics
 "mov,a,#003;"
@@ -81,3 +85,20 @@ errors:
 "cmp,a,#000;"
 "jnz,#001;"
 "ret,#000;"
+
+//function
+"prt,#128;"
+"cal,#007;"
+"prt,#128;"
+"cal,#007;"
+"prt,#128;"
+"cal,#007;"
+"ext,#000;"
+"mov,a,#001;"
+"mov,c,#010;"
+"prt,a;"
+"add,a,#001;"
+"sub,c,#001;"
+"cmp,c,#000;"
+"jnz,#009;"
+"ret;"
