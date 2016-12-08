@@ -61,6 +61,7 @@ errors:
 [ERROR029]: PUT received a faulty argument.
 [ERROR030]: CPY can only copy from register b to memory referenced by register a.
 [ERROR031]: CPY has received a faulty second argument.
+[ERROR032]: GET can only copy from the disk at location stored in b into a.
 
 //basics
 "mov,a,#003;"

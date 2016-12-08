@@ -40,6 +40,7 @@ bool RET();
 bool GIT(signed short);
 bool PUT(signed short);
 bool CPY(signed short, signed short);
+bool GET(signed short, signed short);
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -48,6 +49,7 @@ signed short arg1[256];
 unsigned char registers[6];
 unsigned char stack[16];
 unsigned char ram[250];
+unsigned char disk[256];
 unsigned char flags;
 unsigned short IP;
 unsigned short SP;
@@ -477,8 +479,12 @@ bool PUT(signed short a) {
 		cout << (char)ram[registers[a]];
 		return true;
 	}
-	else if (a < 256) {
+	else if (a >= 6 && a < 256) {
 		cout << (char)ram[a - 6];
+		return true;
+	}
+	else if (a == -1) {
+		cout << (char)registers[0];
 		return true;
 	}
 	else {
@@ -499,6 +505,16 @@ bool CPY(signed short a, signed short b) {
 	}
 	else {
 		cout << "[ERROR030]: CPY can only copy from register b to memory referenced by register a." << endl;
+		return false;
+	}
+}
+bool GET(signed short a, signed short b) {
+	if (a >= 0 && a < 6 && b >= 0 && b < 6) {
+		registers[a] = disk[registers[b]];
+		return true;
+	}
+	else {
+		cout << "[ERROR032]: GET can only copy from the disk at location stored in b into a." << endl;
 		return false;
 	}
 }
@@ -563,6 +579,7 @@ void executeInstructions() {
 		case  21: { f = GIT(arg0[IP]);				break; }
 		case  22: { f = PUT(arg0[IP]);				break; }
 		case  23: { f = CPY(arg0[IP], arg1[IP]);	break; }
+		case  24: { f = GET(arg0[IP], arg1[IP]);	break; }
 		}
 		//printFlags();
 		if (!f) {
@@ -579,6 +596,7 @@ void executeInstructions() {
 void sourceToOpcodes(char* s, short len) {
 	char command[4];
 	char opI = 0, a0I = 0, a1I = 0;
+	int diskP = 0;
 
 	int i = 0;
 	while (i < len) {
@@ -587,8 +605,23 @@ void sourceToOpcodes(char* s, short len) {
 		command[1] = s[i + 1];
 		command[2] = s[i + 2];
 		command[3] = '\0';
-
-		if (!strcmp(command, "mov"))		opcodes[opI] = 0;
+		
+		if (command[0] == '|') {
+			int j = 0;
+			i++;
+			bool stop = false;
+			while (diskP < 256 && !stop) {
+				if (s[i + j] != '|') {
+					disk[diskP++] = s[i + j];
+					j++;
+				}
+				else {
+					stop = true;
+					i += j;
+				}
+			}
+		}
+		else if (!strcmp(command, "mov"))	opcodes[opI] = 0;
 		else if (!strcmp(command, "prt"))	opcodes[opI] = 1;
 		else if (!strcmp(command, "nop"))	opcodes[opI] = 2;
 		else if (!strcmp(command, "ext"))	opcodes[opI] = 3;
@@ -612,6 +645,7 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "git"))	opcodes[opI] = 21;
 		else if (!strcmp(command, "put"))	opcodes[opI] = 22;
 		else if (!strcmp(command, "cpy"))	opcodes[opI] = 23;
+		else if (!strcmp(command, "get"))	opcodes[opI] = 24;
 
 		i += 3;//3 chars, example: "mov"
 		opI++;
@@ -681,21 +715,10 @@ short getPara(char* s, int& i) {
 
 char* getSource() {
 	return
-		"mov,a,#040;"
-		"mov,b,#032;"
-		"cpy,a,b;"
-		"add,a,#001;"
-		"cpy,a,b;"
-		"add,a,#001;"
-		"cpy,a,b;"
-		"add,a,#001;"
-		"cpy,a,b;"
-		"prt,*039;"
-		"prt,*040;"
-		"prt,*041;"
-		"prt,*042;"
-		"prt,*043;"
-		"prt,*044;"
+		"|hello world|"
+		"mov,b,#000;"
+		"get,a,b;"
+		
 		"ext,#000;"
 		;
 }
