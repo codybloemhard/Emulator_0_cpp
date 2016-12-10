@@ -592,7 +592,6 @@ void executeInstructions() {
 		}
 	}
 }
-
 void sourceToOpcodes(char* s, short len) {
 	char command[4];
 	char opI = 0, a0I = 0, a1I = 0;
@@ -600,6 +599,7 @@ void sourceToOpcodes(char* s, short len) {
 
 	int i = 0;
 	while (i < len) {
+		bool foundCode = true;
 		//capture instruction
 		command[0] = s[i + 0];
 		command[1] = s[i + 1];
@@ -607,6 +607,7 @@ void sourceToOpcodes(char* s, short len) {
 		command[3] = '\0';
 		
 		if (command[0] == '|') {
+			foundCode = false;
 			int j = 0;
 			i++;
 			bool stop = false;
@@ -616,8 +617,11 @@ void sourceToOpcodes(char* s, short len) {
 					j++;
 				}
 				else {
+					disk[diskP++] = 0;
+					j++;
 					stop = true;
 					i += j;
+					opI = 0;
 				}
 			}
 		}
@@ -647,47 +651,36 @@ void sourceToOpcodes(char* s, short len) {
 		else if (!strcmp(command, "cpy"))	opcodes[opI] = 23;
 		else if (!strcmp(command, "get"))	opcodes[opI] = 24;
 
-		i += 3;//3 chars, example: "mov"
-		opI++;
+		if (foundCode) {
+			i += 3;//3 chars, example: "mov"
+			opI++;
 
-		//end of line(;) or first argument(,)
-		if (s[i] == ',') {
-			i++;
-			short para = getPara(s, i);
-			arg0[a0I] = para;
-			a0I++;
-		}
-		else {
-			a0I += 1;
-		}
+			//end of line(;) or first argument(,)
+			if (s[i] == ',') {
+				i++;
+				short para = getPara(s, i);
+				arg0[a0I] = para;
+				a0I++;
+			}
+			else {
+				a0I += 1;
+			}
 
-		//end of line(;) or next argument(,)
-		if (s[i] == ',') {
-			i++;
-			short para = getPara(s, i);
-			arg1[a1I] = para;
-			a1I++;
-			i++;
-		}
-		else {
-			a1I++;
-			i++;
+			//end of line(;) or next argument(,)
+			if (s[i] == ',') {
+				i++;
+				short para = getPara(s, i);
+				arg1[a1I] = para;
+				a1I++;
+				i++;
+			}
+			else {
+				a1I++;
+				i++;
+			}
 		}
 	}
 }
-
-void printOpcodes(int insMin, int insMax, int a0Min, int a0Max, int a1Min, int a1Max) {
-	for (int i = insMin; i < insMax + 1; i++) {
-		cout << "[SYSTEM::OPCODES::" << i << "]: " << (short)opcodes[i] << endl;
-	}
-	for (int i = a0Min; i < a0Max + 1; i++) {
-		cout << "[SYSTEM::ARG0::" << i << "]: " << arg0[i] << endl;
-	}
-	for (int i = a1Min; i < a1Max + 1; i++) {
-		cout << "[SYSTEM::ARG1::" << i << "]: " << arg1[i] << endl;
-	}
-}
-
 short getPara(char* s, int& i) {
 	//capture argument: 0-5 = register, 5 - 255 = memorylocation, < 0 is -(decimal)
 	if (s[i] == '*') {
@@ -712,12 +705,31 @@ short getPara(char* s, int& i) {
 		return answ;
 	}
 }
+void printOpcodes(int insMin, int insMax, int a0Min, int a0Max, int a1Min, int a1Max) {
+	for (int i = insMin; i < insMax + 1; i++) {
+		cout << "[SYSTEM::OPCODES::" << i << "]: " << (short)opcodes[i] << endl;
+	}
+	for (int i = a0Min; i < a0Max + 1; i++) {
+		cout << "[SYSTEM::ARG0::" << i << "]: " << arg0[i] << endl;
+	}
+	for (int i = a1Min; i < a1Max + 1; i++) {
+		cout << "[SYSTEM::ARG1::" << i << "]: " << arg1[i] << endl;
+	}
+}
 
 char* getSource() {
 	return
-		"|hello world|"
-		"mov,b,#000;"
+		"|hello world\n|"
+		"|second string\n|"
+		"|third string\n|"
+
+		"mov,b,#013;"
 		"get,a,b;"
+		"cmp,a,#000;"
+		"jjz,#007;"
+		"put,#000;"
+		"add,b,#001;"
+		"gto,#001;"
 		
 		"ext,#000;"
 		;

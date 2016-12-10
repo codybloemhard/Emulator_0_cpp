@@ -103,3 +103,18 @@ errors:
 "cmp,c,#000;"
 "jnz,#009;"
 "ret;"
+
+//print string from disk
+"|hello world\n|"
+"|second string\n|"
+"|third string\n|"
+
+"mov,b,#013;"
+"get,a,b;"
+"cmp,a,#000;"
+"jjz,#007;"
+"put,#000;"
+"add,b,#001;"
+"gto,#001;"
+		
+"ext,#000;"
