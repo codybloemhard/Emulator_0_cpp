@@ -41,6 +41,8 @@ bool GIT(signed short);
 bool PUT(signed short);
 bool CPY(signed short, signed short);
 bool GET(signed short, signed short);
+//labels:
+char labelIP[26];
 //program in ram
 char opcodes[256];
 signed short arg0[256];
@@ -237,6 +239,12 @@ bool SUB(signed short a, signed short b) {
 bool GTO(signed short a) {
 	if (a < 0 && a > -256)
 		IP = (-a) - 1 - 1;// ((-a) - 1) gets the line to jump to, -1 cause the exec-forloop does ip++ after this call so this corrects this.
+	else if (a >= 0 && a < 6) {//register
+		IP = registers[a];
+	}
+	else if (a >= 6) {//label
+		IP = labelIP[a - 6];
+	}
 	else {
 		cout << "[ERROR009]: GTO is used with an invalid adress." << endl;
 		return false;
@@ -392,7 +400,7 @@ bool GCH(signed short a) {
 		return false;
 	}
 }
-bool PSH(signed short a) {
+bool PSH(signed short a)  {
 	if (SP >= 16) {
 		cout << "[ERROR021]: Stackoverflow." << endl;
 		return false;
@@ -625,6 +633,11 @@ void sourceToOpcodes(char* s, short len) {
 				}
 			}
 		}
+		else if (command[0] == ':') {
+			foundCode = false;
+			i += 3;
+			labelIP[command[1] - 'a'] = opI - 1;
+		}
 		else if (!strcmp(command, "mov"))	opcodes[opI] = 0;
 		else if (!strcmp(command, "prt"))	opcodes[opI] = 1;
 		else if (!strcmp(command, "nop"))	opcodes[opI] = 2;
@@ -699,6 +712,11 @@ short getPara(char* s, int& i) {
 		i += 4;//4 chars example: "#066"
 		return (short)((-stoi(numSTR))-1);
 	}
+	else if (s[i] == ':') {
+		short label = s[i + 1] - 'a';
+		i += 2;//:a
+		return label + 6;
+	}
 	else {
 		short answ = s[i] - 'a';
 		i += 1;//1 char example: "a"
@@ -724,13 +742,14 @@ char* getSource() {
 		"|third string\n|"
 
 		"mov,b,#013;"
+		":a:"
 		"get,a,b;"
 		"cmp,a,#000;"
-		"jjz,#007;"
+		"jjz,:z;"
 		"put,#000;"
 		"add,b,#001;"
-		"gto,#001;"
-		
+		"gto,:a;"
+		":z:"
 		"ext,#000;"
 		;
 }
