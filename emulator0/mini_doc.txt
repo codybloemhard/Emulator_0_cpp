@@ -104,17 +104,18 @@ errors:
 "jnz,#009;"
 "ret;"
 
-//print string from disk
+//print string from disk usign labels
 "|hello world\n|"
 "|second string\n|"
 "|third string\n|"
 
 "mov,b,#013;"
+":a:"
 "get,a,b;"
 "cmp,a,#000;"
-"jjz,#007;"
+"jjz,:z;"
 "put,#000;"
 "add,b,#001;"
-"gto,#001;"
-		
+"gto,:a;"
+":z:"
 "ext,#000;"

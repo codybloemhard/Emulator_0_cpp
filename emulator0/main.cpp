@@ -15,32 +15,6 @@ void setFlag(bool, char);
 bool getFlag(char);
 void printFlags();
 void clearFlags();
-////
-bool MOV(signed short, signed short);
-bool PRT(signed short);
-bool NOP();
-bool EXT(signed short);
-bool ADD(signed short, signed short);
-bool SUB(signed short, signed short);
-bool GTO(signed short);
-bool CMP(signed short, signed short);
-bool JJZ(signed short);
-bool JNZ(signed short);
-bool JJS(signed short);
-bool JJG(signed short);
-bool JZS(signed short);
-bool JZG(signed short);
-bool MUL(signed short);
-bool DIV(signed short);
-bool GCH(signed short);
-bool PSH(signed short);
-bool POP(signed short);
-bool CAL(signed short);
-bool RET();
-bool GIT(signed short);
-bool PUT(signed short);
-bool CPY(signed short, signed short);
-bool GET(signed short, signed short);
 //labels:
 char labelIP[26];
 //program in ram
